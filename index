@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAUUSD Compound Trading Planner & Risk Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icon CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts Inter & Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            400: '#FBBF24',
+                            500: '#F59E0B',
+                            600: '#D97706',
+                            700: '#B45309',
+                        },
+                        darkbg: '#0F172A',
+                        darkcard: '#1E293B',
+                        darkborder: '#334155'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Styling & Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f59e0b;
+        }
+        .gold-gradient {
+            background: linear-gradient(135deg, #F59E0B 0%, #B45309 100%);
+        }
+        .gold-text-gradient {
+            background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 50%, #D97706 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-200 font-sans min-h-screen pb-12 antialiased selection:bg-gold-500 selection:text-slate-900">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl gold-gradient flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-gold-500/20">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <div>
+                    <h1 class="font-outfit font-bold text-lg sm:text-xl text-white tracking-wide">XAUUSD <span class="gold-text-gradient">COMPOUNDER</span></h1>
+                    <p class="text-xs text-slate-400">Plan • Execute • Compound</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="resetData()" class="px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">Reset Reset Data</span>
+                </button>
+                <div class="h-6 w-[1px] bg-slate-800"></div>
+                <span class="px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-xs font-semibold flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Gold Strategy
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+
+        <!-- Banner Peringatan Risiko -->
+        <div class="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-start space-x-3">
+                <div class="p-2.5 bg-amber-500/20 text-amber-400 rounded-xl mt-0.5 sm:mt-0">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-outfit font-semibold text-amber-300">Peringatan Manajemen Risiko Harian</h3>
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        Strategi compound 15% harian memiliki **risiko sangat tinggi**. Selalu gunakan Stop Loss, jangan *over-trade*, dan berhenti trading jika target harian sudah tercapai atau batas maksimal kerugian harian tersentuh.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1: Dashboard Parameter & Summary Cards -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Parameter Inputs Panel -->
+            <div class="lg:col-span-5 glass-panel rounded-2xl p-6 shadow-xl space-y-5">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="font-outfit font-bold text-lg text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-gold-500"></i> Pengaturan Parameter
+                    </h2>
+                    <span class="text-xs text-slate-400">Ubah angka di bawah</span>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Input Modal Awal -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Modal Awal / Initial Balance ($)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">$</span>
+                            <input type="number" id="inputInitialBalance" value="100" min="1" step="10" 
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-white font-semibold focus:outline-none focus:border-gold-500 transition">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Input Profit Fase 1 -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Target Hari 1-30 (%)</label>
+                            <div class="relative">
+                                <input type="number" id="inputPhase1Rate" value="15" min="0.1" step="0.5" 
+                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-semibold focus:outline-none focus:border-gold-500 transition">
+                                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">%</span>
+                            </div>
+                        </div>
+                        <!-- Input Profit Fase 2 -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Target Hari 31-60 (%)</label>
+                            <div class="relative">
+                                <input type="number" id="inputPhase2Rate" value="5" min="0.1" step="0.5" 
+                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-semibold focus:outline-none focus:border-gold-500 transition">
+                                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Ratio Lot Sizing -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Rasio Lot per Modal ($100 = X Lot)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">Lot:</span>
+                            <input type="number" id="inputLotRatio" value="0.01" min="0.001" step="0.005" 
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-12 pr-4 py-2.5 text-white font-semibold focus:outline-none focus:border-gold-500 transition">
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">Standar aman: 0.01 lot per $100 modal.</p>
+                    </div>
+
+                    <button onclick="calculateSimulation()" class="w-full py-3 bg-gradient-to-r from-gold-500 to-gold-700 hover:from-gold-400 hover:to-gold-600 text-slate-950 font-bold rounded-xl shadow-lg shadow-gold-500/20 transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-calculator"></i> Hitung Ulang Simulasi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary KPI Metric Cards & Chart -->
+            <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- Card 1: Modal Awal -->
+                    <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group">
+                        <div class="absolute -right-2 -bottom-2 opacity-10 text-6xl text-slate-200 group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Modal Awal</p>
+                        <h3 id="cardInitialBalance" class="text-2xl font-outfit font-extrabold text-white mt-2">$100.00</h3>
+                        <p class="text-[11px] text-slate-400 mt-1">Hari ke-0</p>
+                    </div>
+
+                    <!-- Card 2: Saldo Hari 30 -->
+                    <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-amber-500 relative overflow-hidden group">
+                        <div class="absolute -right-2 -bottom-2 opacity-10 text-6xl text-amber-500 group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                        <p class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Saldo Hari 30 (15%)</p>
+                        <h3 id="cardDay30Balance" class="text-2xl font-outfit font-extrabold text-white mt-2">$6,621.18</h3>
+                        <p id="cardDay30Growth" class="text-[11px] text-emerald-400 mt-1 font-semibold">+6,521% Growth</p>
+                    </div>
+
+                    <!-- Card 3: Saldo Hari 60 -->
+                    <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-emerald-500 relative overflow-hidden group">
+                        <div class="absolute -right-2 -bottom-2 opacity-10 text-6xl text-emerald-500 group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Saldo Hari 60 (5%)</p>
+                        <h3 id="cardDay60Balance" class="text-2xl font-outfit font-extrabold text-emerald-400 mt-2">$28,616.35</h3>
+                        <p id="cardDay60Growth" class="text-[11px] text-emerald-400 mt-1 font-semibold">+28,516% Total Growth</p>
+                    </div>
+                </div>
+
+                <!-- Mini Growth Chart Panel -->
+                <div class="glass-panel p-5 rounded-2xl flex-1 flex flex-col justify-between min-h-[220px]">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-outfit font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-area text-gold-400"></i> Proyeksi Kurva Pertumbuhan Saldo (60 Hari)
+                        </h3>
+                        <span class="text-xs text-slate-400">Compound Growth</span>
+                    </div>
+                    <div class="relative w-full h-44">
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Quick Lot & Risk Calculator -->
+        <section class="glass-panel rounded-2xl p-6 shadow-xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-5">
+                <div>
+                    <h2 class="font-outfit font-bold text-lg text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-amber-400"></i> Quick Gold Risk & Lot Size Calculator
+                    </h2>
+                    <p class="text-xs text-slate-400">Hitung presisi lot harian berdasarkan Stop Loss & Batas Risiko Per-Trade</p>
+                </div>
+                <span class="text-xs px-2.5 py-1 bg-slate-800 rounded-lg text-slate-300 border border-slate-700">1 Pip Gold = $0.10 / 0.01 Lot</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Saldo Saat Ini ($)</label>
+                    <input type="number" id="calcEquity" value="100" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold text-sm focus:outline-none focus:border-gold-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Risiko Per Trade (%)</label>
+                    <input type="number" id="calcRiskPct" value="3" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold text-sm focus:outline-none focus:border-gold-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Stop Loss (Pips / Points)</label>
+                    <input type="number" id="calcSLPips" value="30" step="5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold text-sm focus:outline-none focus:border-gold-500" placeholder="contoh: 30 pips ($3.0)">
+                </div>
+                <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-800 flex flex-col justify-center">
+                    <p class="text-[11px] text-slate-400 uppercase">Rekomendasi Lot & Dollar Loss</p>
+                    <div class="flex items-baseline justify-between mt-1">
+                        <span id="calcResultLot" class="text-xl font-outfit font-bold text-amber-400">0.01 Lot</span>
+                        <span id="calcResultRiskUSD" class="text-xs font-semibold text-red-400">Risk: $3.00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Interactive Daily Simulation Table -->
+        <section class="glass-panel rounded-2xl p-6 shadow-xl space-y-4">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="font-outfit font-bold text-xl text-white flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-gold-500"></i> Tabel Simulasi & Tracker Harian
+                    </h2>
+                    <p class="text-xs text-slate-400">Centang "Checklist" setiap kali Anda berhasil mencapai target hari tersebut.</p>
+                </div>
+                
+                <!-- Filters & Search -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="relative">
+                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                        <input type="text" id="tableSearch" placeholder="Cari Hari..." class="bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-gold-500">
+                    </div>
+                    <select id="phaseFilter" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-gold-500">
+                        <option value="all">Semua Hari (1-60)</option>
+                        <option value="phase1">Fase 1 (Hari 1-30)</option>
+                        <option value="phase2">Fase 2 (Hari 31-60)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto rounded-xl border border-slate-800 max-h-[500px]">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="text-xs uppercase bg-slate-900/90 sticky top-0 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-center">Status</th>
+                            <th scope="col" class="px-4 py-3">Hari</th>
+                            <th scope="col" class="px-4 py-3">Fase</th>
+                            <th scope="col" class="px-4 py-3">Modal Awal ($)</th>
+                            <th scope="col" class="px-4 py-3">Target Profit ($)</th>
+                            <th scope="col" class="px-4 py-3">Saldo Akhir ($)</th>
+                            <th scope="col" class="px-4 py-3 text-center">Rekomendasi Lot</th>
+                        </tr>
+                    </thead>
+                    <tbody id="simulationTableBody" class="divide-y divide-slate-800/60 font-mono text-xs">
+                        <!-- Dynamic Rows Generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex items-center justify-between text-xs text-slate-400 pt-2">
+                <span id="completedCountText">Progres: 0 / 60 Hari Tercapai</span>
+                <span>* Data tersimpan secara otomatis di browser</span>
+            </div>
+        </section>
+
+        <!-- Section 4: Trading Guidelines & Mindset Rules -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Rules Card -->
+            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-gold-500">
+                <h3 class="font-outfit font-bold text-lg text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-gold-500"></i> 4 Aturan Emas Trading Compound Gold
+                </h3>
+                <ul class="space-y-3.5 text-xs text-slate-300">
+                    <li class="flex items-start gap-3">
+                        <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold mt-0.5">1</span>
+                        <div>
+                            <strong class="text-white block font-semibold">Disiplin Target Daily Limit</strong>
+                            Segera <strong>STOP TRADING</strong> begitu target profit harian (15% atau 5%) tercapai. Jangan serakah untuk terus *open position*.
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold mt-0.5">2</span>
+                        <div>
+                            <strong class="text-white block font-semibold">Batas Kerugian Maksimal (Daily Cut Loss)</strong>
+                            Tetapkan batas *Daily Drawdown* maksimal (misal: max loss 6%-10% per hari). Jika tersentuh, tutup aplikasi dan evaluasi esok hari.
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold mt-0.5">3</span>
+                        <div>
+                            <strong class="text-white block font-semibold">Hindari Over-Leveraging & Revenge Trading</strong>
+                            Gunakan rekomendasi ukuran lot di atas. Jangan melakukan transaksi balasan (*revenge trade*) setelah mengalami kerugian.
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold mt-0.5">4</span>
+                        <div>
+                            <strong class="text-white block font-semibold">Gunakan Stop Loss (SL) Wajib</strong>
+                            XAUUSD sangat fluktuatif terutama saat rilis berita (*News High Impact*). Selalu pasang SL untuk melindungi ekuitas Anda.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Strategy Tip Card -->
+            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-blue-500">
+                <h3 class="font-outfit font-bold text-lg text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-blue-400"></i> Panduan Eksekusi Teknis Gold (XAUUSD)
+                </h3>
+                <div class="space-y-3 text-xs text-slate-300">
+                    <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800">
+                        <strong class="text-blue-400 block font-semibold mb-1">Membagi Target Harian ke Beberapa Trade:</strong>
+                        <p class="leading-relaxed">Daripada mencari 15% sekaligus dalam 1 posisi, bagi target harian Anda menjadi 2-3 transaksi terpisah (misal: 3 trade @ 5% profit).</p>
+                    </div>
+                    <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800">
+                        <strong class="text-blue-400 block font-semibold mb-1">Kombinasi Risk Reward Ratio (RRR):</strong>
+                        <p class="leading-relaxed">Gunakan minimal RRR 1:1.5 atau 1:2. Dengan RRR 1:2, Anda hanya memerlukan *win rate* 50% untuk mencapai target harian.</p>
+                    </div>
+                    <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800">
+                        <strong class="text-blue-400 block font-semibold mb-1">Mengamankan Profit (Partial Withdrawal):</strong>
+                        <p class="leading-relaxed">Setelah mencapai Hari ke-30 ($6,600+), disarankan untuk menarik modal awal ($100) atau sebagian profit agar psikologis bertrading tetap tenang.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 text-center text-xs text-slate-400">
+        <p>© XAUUSD Gold Trading Compound Dashboard • Dibuat untuk panduan disiplin trading.</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Global State & Local Storage Keys
+        const STORAGE_CHECK_KEY = "gold_compound_checked_days";
+        let checkedDays = JSON.parse(localStorage.getItem(STORAGE_CHECK_KEY)) || [];
+        let growthChartInstance = null;
+        let currentSimulationData = [];
+
+        // DOM Elements
+        const inputInitialBalance = document.getElementById('inputInitialBalance');
+        const inputPhase1Rate = document.getElementById('inputPhase1Rate');
+        const inputPhase2Rate = document.getElementById('inputPhase2Rate');
+        const inputLotRatio = document.getElementById('inputLotRatio');
+        
+        const cardInitialBalance = document.getElementById('cardInitialBalance');
+        const cardDay30Balance = document.getElementById('cardDay30Balance');
+        const cardDay30Growth = document.getElementById('cardDay30Growth');
+        const cardDay60Balance = document.getElementById('cardDay60Balance');
+        const cardDay60Growth = document.getElementById('cardDay60Growth');
+
+        const tableBody = document.getElementById('simulationTableBody');
+        const tableSearch = document.getElementById('tableSearch');
+        const phaseFilter = document.getElementById('phaseFilter');
+        const completedCountText = document.getElementById('completedCountText');
+
+        // Risk Calculator Elements
+        const calcEquity = document.getElementById('calcEquity');
+        const calcRiskPct = document.getElementById('calcRiskPct');
+        const calcSLPips = document.getElementById('calcSLPips');
+        const calcResultLot = document.getElementById('calcResultLot');
+        const calcResultRiskUSD = document.getElementById('calcResultRiskUSD');
+
+        // Format Currency Helper
+        function formatUSD(amount) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        }
+
+        // Calculate Main Simulation Data
+        function calculateSimulation() {
+            const initialBalance = parseFloat(inputInitialBalance.value) || 100;
+            const phase1Rate = (parseFloat(inputPhase1Rate.value) || 15) / 100;
+            const phase2Rate = (parseFloat(inputPhase2Rate.value) || 5) / 100;
+            const lotRatio = parseFloat(inputLotRatio.value) || 0.01;
+
+            currentSimulationData = [];
+            let currentBalance = initialBalance;
+
+            for (let day = 1; day <= 60; day++) {
+                const isPhase1 = day <= 30;
+                const rate = isPhase1 ? phase1Rate : phase2Rate;
+                const startBalance = currentBalance;
+                const profitTarget = startBalance * rate;
+                const endBalance = startBalance + profitTarget;
+                
+                // Recommended lot proportional to balance ($100 = lotRatio)
+                const recommendedLot = Math.max(0.01, (startBalance / 100) * lotRatio);
+
+                currentSimulationData.push({
+                    day: day,
+                    phase: isPhase1 ? 1 : 2,
+                    ratePercent: isPhase1 ? (phase1Rate * 100) : (phase2Rate * 100),
+                    startBalance: startBalance,
+                    profitTarget: profitTarget,
+                    endBalance: endBalance,
+                    recommendedLot: recommendedLot
+                });
+
+                currentBalance = endBalance;
+            }
+
+            updateDashboardUI(initialBalance);
+            renderTable();
+            updateChart();
+        }
+
+        // Update Dashboard Summary Cards
+        function updateDashboardUI(initialBalance) {
+            const day30 = currentSimulationData[29];
+            const day60 = currentSimulationData[59];
+
+            cardInitialBalance.textContent = formatUSD(initialBalance);
+            cardDay30Balance.textContent = formatUSD(day30.endBalance);
+            cardDay60Balance.textContent = formatUSD(day60.endBalance);
+
+            const growth30 = ((day30.endBalance - initialBalance) / initialBalance) * 100;
+            const growth60 = ((day60.endBalance - initialBalance) / initialBalance) * 100;
+
+            cardDay30Growth.textContent = `+${growth30.toLocaleString('en-US', {maximumFractionDigits: 0})}% Growth`;
+            cardDay60Growth.textContent = `+${growth60.toLocaleString('en-US', {maximumFractionDigits: 0})}% Growth`;
+
+            // Auto sync Quick Calculator Equity with Day 1 initial balance if user hasn't typed custom
+            calcEquity.value = initialBalance;
+            calculateQuickRisk();
+        }
+
+        // Render Daily Simulation Table
+        function renderTable() {
+            const searchTerm = tableSearch.value.toLowerCase().trim();
+            const filterValue = phaseFilter.value;
+
+            tableBody.innerHTML = '';
+            let completedCount = 0;
+
+            currentSimulationData.forEach(item => {
+                const isChecked = checkedDays.includes(item.day);
+                if (isChecked) completedCount++;
+
+                // Filter logic
+                if (filterValue === 'phase1' && item.phase !== 1) return;
+                if (filterValue === 'phase2' && item.phase !== 2) return;
+                if (searchTerm && !`hari ${item.day}`.includes(searchTerm) && !`${item.day}`.includes(searchTerm)) return;
+
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-slate-800/50 transition ${isChecked ? 'bg-amber-500/10' : ''}`;
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-center">
+                        <input type="checkbox" onchange="toggleDayCheck(${item.day})" ${isChecked ? 'checked' : ''}
+                            class="w-4 h-4 text-gold-500 bg-slate-900 border-slate-700 rounded focus:ring-amber-500 accent-amber-500 cursor-pointer">
+                    </td>
+                    <td class="px-4 py-3 font-semibold ${isChecked ? 'text-amber-400' : 'text-white'}">Hari ${item.day}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 text-[10px] rounded-md font-semibold ${item.phase === 1 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
+                            Fase ${item.phase} (${item.ratePercent}%)
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-slate-300">${formatUSD(item.startBalance)}</td>
+                    <td class="px-4 py-3 text-emerald-400 font-semibold">+${formatUSD(item.profitTarget)}</td>
+                    <td class="px-4 py-3 text-white font-bold">${formatUSD(item.endBalance)}</td>
+                    <td class="px-4 py-3 text-center font-bold text-amber-400">${item.recommendedLot.toFixed(2)} Lot</td>
+                `;
+
+                tableBody.appendChild(tr);
+            });
+
+            completedCountText.textContent = `Progres: ${completedCount} / 60 Hari Tercapai (${((completedCount/60)*100).toFixed(0)}%)`;
+        }
+
+        // Toggle Day Checklist State
+        function toggleDayCheck(day) {
+            if (checkedDays.includes(day)) {
+                checkedDays = checkedDays.filter(d => d !== day);
+            } else {
+                checkedDays.push(day);
+            }
+            localStorage.setItem(STORAGE_CHECK_KEY, JSON.stringify(checkedDays));
+            renderTable();
+        }
+
+        // Reset Data
+        function resetData() {
+            if (confirm("Apakah Anda yakin ingin mereset checklist harian dan pengisian parameter ke default?")) {
+                localStorage.removeItem(STORAGE_CHECK_KEY);
+                checkedDays = [];
+                inputInitialBalance.value = 100;
+                inputPhase1Rate.value = 15;
+                inputPhase2Rate.value = 5;
+                inputLotRatio.value = 0.01;
+                calculateSimulation();
+            }
+        }
+
+        // Quick Risk & Lot Calculator Function
+        function calculateQuickRisk() {
+            const equity = parseFloat(calcEquity.value) || 0;
+            const riskPct = parseFloat(calcRiskPct.value) || 0;
+            const slPips = parseFloat(calcSLPips.value) || 1;
+
+            const riskUSD = equity * (riskPct / 100);
+            
+            // XAUUSD: 1 Pip = $0.10 for 0.01 Lot (or $10 per pip for 1.00 standard lot)
+            // Pip Value = Lot * 10
+            // RiskUSD = SLPips * Lot * 10  => Lot = RiskUSD / (SLPips * 10)
+            let calculatedLot = riskUSD / (slPips * 10);
+            if (calculatedLot < 0.01) calculatedLot = 0.01;
+
+            calcResultLot.textContent = `${calculatedLot.toFixed(2)} Lot`;
+            calcResultRiskUSD.textContent = `Risk: ${formatUSD(riskUSD)}`;
+        }
+
+        // Chart Render Function
+        function updateChart() {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            const labels = currentSimulationData.map(d => `H-${d.day}`);
+            const dataValues = currentSimulationData.map(d => d.endBalance);
+
+            if (growthChartInstance) {
+                growthChartInstance.destroy();
+            }
+
+            growthChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Saldo ($)',
+                        data: dataValues,
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return ` Saldo: $${context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false, drawBorder: false },
+                            ticks: { color: '#64748B', font: { size: 10 }, maxTicksLimit: 12 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(51, 65, 85, 0.4)', drawBorder: false },
+                            ticks: { 
+                                color: '#64748B', 
+                                font: { size: 10 },
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Event Listeners
+        tableSearch.addEventListener('input', renderTable);
+        phaseFilter.addEventListener('change', renderTable);
+
+        calcEquity.addEventListener('input', calculateQuickRisk);
+        calcRiskPct.addEventListener('input', calculateQuickRisk);
+        calcSLPips.addEventListener('input', calculateQuickRisk);
+
+        // Initial Initialization on Window Load
+        window.onload = function() {
+            calculateSimulation();
+        };
+    </script>
+</body>
+</html>
